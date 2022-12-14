@@ -1,0 +1,16 @@
+{
+    "description": "This Rafiki Token NFT proves I've deployed an ERC721 Smart Contract on Goerli Testnet.",
+    "external_url": "https://edwardhorsey.dev",
+    "image": "https://gateway.pinata.cloud/ipfs/QmNNEgj74Yojprdrc1Am7b4nncSJSAc1uztR7WFL9iPV1R",
+    "name": "Rafiki",
+    "attributes": [
+        {
+            "trait_type": "Hours spent sleeping per day",
+            "value": "18"
+        },
+        {
+            "trait_type": "Favourite food",
+            "value": "Tuna"
+        }
+    ]
+}
