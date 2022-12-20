@@ -3,4 +3,5 @@ export interface Memo {
     name: string;
     from: string;
     message: string;
+    amount: string;
 }

@@ -73,7 +73,7 @@ export default function Home() {
         }
     };
 
-    const buyCoffee = async () => {
+    const buyCoffee = async (large = false) => {
         try {
             const { ethereum } = window;
 
@@ -86,7 +86,7 @@ export default function Home() {
                 const coffeeTxn = await buyMeACoffee.buyCoffee(
                     name ? name : "anon",
                     message ? message : "Enjoy your coffee!",
-                    { value: ethers.utils.parseEther("0.001") },
+                    { value: ethers.utils.parseEther(large ? "0.003" : "0.001") },
                 );
 
                 await coffeeTxn.wait();
@@ -209,8 +209,13 @@ export default function Home() {
                                 ></textarea>
                             </div>
                             <div>
-                                <button type="button" onClick={buyCoffee}>
+                                <button type="button" onClick={() => buyCoffee()}>
                                     Send 1 Coffee for 0.001ETH
+                                </button>
+                            </div>
+                            <div>
+                                <button type="button" onClick={() => buyCoffee(true)}>
+                                    Send 1 Large Coffee for 0.003ETH
                                 </button>
                             </div>
                         </form>

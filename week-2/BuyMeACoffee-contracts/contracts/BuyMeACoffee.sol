@@ -7,7 +7,8 @@ contract BuyMeACoffee {
         address indexed from,
         uint256 timestamp,
         string name,
-        string message
+        string message,
+        uint amount
     );
 
     // Memo struct.
@@ -16,6 +17,7 @@ contract BuyMeACoffee {
         uint256 timestamp;
         string name;
         string message;
+        uint amount;
     }
 
     // List of all memos received from friends.
@@ -44,7 +46,8 @@ contract BuyMeACoffee {
             msg.sender,
             block.timestamp,
             _name,
-            _message
+            _message,
+            msg.value
         ));
 
         // Emit a log event when a new memo is created!
@@ -52,7 +55,8 @@ contract BuyMeACoffee {
             msg.sender,
             block.timestamp, 
             _name,
-            _message
+            _message,
+            msg.value
         );
     }
 

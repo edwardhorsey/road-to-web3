@@ -25,8 +25,9 @@ async function printMemos(memos: Memo[]) {
         const tipper = memo.name;
         const tipperAddress = memo.from;
         const message = memo.message;
+        const amount = ethers.utils.formatEther(memo.amount);
 
-        console.log(`At ${timestamp}, ${tipper} ${tipperAddress} said: "${message}"`);
+        console.log(`At ${timestamp}, ${tipper} ${tipperAddress} said: "${message}" and sent ${amount} ETH`);
     }
 }
 
@@ -80,8 +81,11 @@ async function main() {
     await buyMeACoffee.connect(owner).changeWithdrawalAddress(tipper.address);
 
     console.log("== buy some more coffees and withdraw tips to new owner ==");
-    await buyMeACoffee.connect(tipper2).buyCoffee("Vitto", "Here's another coffee", tip);
-    await buyMeACoffee.connect(tipper3).buyCoffee("Kay", "Here's another coffee", tip);
+    const largerTip = { value: ethers.utils.parseEther("3.0") };
+    await buyMeACoffee.connect(tipper2).buyCoffee("Vitto", "Here's another larger coffee", largerTip);
+    await buyMeACoffee.connect(tipper3).buyCoffee("Kay", "Here's another larger coffee", largerTip);
+    printMemos((await buyMeACoffee.getMemos()) as unknown as Memo[]);
+
     await buyMeACoffee.connect(tipper).withdrawTips();
     await printBalances(addresses);
 }
