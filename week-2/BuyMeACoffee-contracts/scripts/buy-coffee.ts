@@ -41,11 +41,11 @@ async function main() {
     console.log("BuyMeACoffee deployed to ", buyMeACoffee.address);
 
     // Check balances before the coffee purchase.
-    const addresses = [owner.address, tipper.address, buyMeACoffee.address];
+    const addresses = [owner.address, buyMeACoffee.address, tipper.address, tipper2.address, tipper3.address];
     console.log("== start ==");
     await printBalances(addresses);
 
-    // Buy the owner a few coffess.
+    // Buy the owner a few coffees.
     const tip = { value: ethers.utils.parseEther("1.0") };
     await buyMeACoffee.connect(tipper).buyCoffee("Carolina", "You're the best!", tip);
     await buyMeACoffee.connect(tipper2).buyCoffee("Vitto", "Amazing teacher :)", tip);
@@ -63,9 +63,27 @@ async function main() {
     await printBalances(addresses);
 
     // Read all the memos left for the owner.
-    console.log("== after withdraw tips ==");
+    console.log("== read memos ==");
     const memos = (await buyMeACoffee.getMemos()) as unknown as Memo[];
     printMemos(memos);
+
+    // Owner changes
+    console.log("== try to change withdrawal address not as owner - should fail ==");
+
+    try {
+        await buyMeACoffee.connect(tipper2).changeWithdrawalAddress(tipper.address);
+    } catch (error) {
+        console.log(error instanceof Error ? error.message : error);
+    }
+
+    console.log("== change withdrawal address as owner ==");
+    await buyMeACoffee.connect(owner).changeWithdrawalAddress(tipper.address);
+
+    console.log("== buy some more coffees and withdraw tips to new owner ==");
+    await buyMeACoffee.connect(tipper2).buyCoffee("Vitto", "Here's another coffee", tip);
+    await buyMeACoffee.connect(tipper3).buyCoffee("Kay", "Here's another coffee", tip);
+    await buyMeACoffee.connect(tipper).withdrawTips();
+    await printBalances(addresses);
 }
 
 // We recommend this pattern to be able to use async/await everywhere
