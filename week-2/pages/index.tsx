@@ -2,8 +2,7 @@ import abi from "../utils/BuyMeACoffee.json";
 import { ethers } from "ethers";
 import Head from "next/head";
 import { ChangeEvent, useCallback, useEffect, useState } from "react";
-import styles from "../styles/Home.module.css";
-import { Memo } from "../types/memo";
+import { Memo, MemoRaw } from "../types/memo";
 
 // Contract Address & ABI
 const contractAddress = "0x813C080BAC2DA8d35560576FE50D094868860eA4";
@@ -72,7 +71,7 @@ export default function Home() {
         }
     };
 
-    const buyCoffee = async (large = false) => {
+    const buyCoffee = async (tip: string) => {
         try {
             const { ethereum } = window;
 
@@ -85,7 +84,7 @@ export default function Home() {
                 const coffeeTxn = await buyMeACoffee.buyCoffee(
                     name ? name : "anon",
                     message ? message : "Enjoy your coffee!",
-                    { value: ethers.utils.parseEther(large ? "0.003" : "0.001") },
+                    { value: ethers.utils.parseEther(tip) },
                 );
 
                 await coffeeTxn.wait();
@@ -116,9 +115,17 @@ export default function Home() {
                 const buyMeACoffee = new ethers.Contract(contractAddress, contractABI, signer);
 
                 console.log("fetching memos from the blockchain..");
-                const memos = await buyMeACoffee.getMemos();
+                const memos = (await buyMeACoffee.getMemos()) as MemoRaw[];
                 console.log("fetched!");
-                setMemos(memos);
+                setMemos(
+                    memos.map(({ from, timestamp, message, name, amount }) => ({
+                        address: from,
+                        timestamp: new Date(timestamp * 1000),
+                        message,
+                        name,
+                        amount,
+                    })),
+                );
             } else {
                 console.log("Metamask is not connected");
 
@@ -132,14 +139,14 @@ export default function Home() {
     }, []);
 
     useEffect(() => {
-        let buyMeACoffee: any;
+        let buyMeACoffee: ethers.Contract;
         isWalletConnected();
         getMemos();
 
         // Create an event handler function for when someone sends
         // us a new memo.
-        const onNewMemo = (from: string, timestamp: number, name: string, message: string) => {
-            console.log("Memo received: ", from, timestamp, name, message);
+        const onNewMemo = (from: string, timestamp: number, name: string, message: string, amount: string) => {
+            console.log("Memo received: ", from, timestamp, name, message, amount);
             setMemos((prevState) => [
                 ...prevState,
                 {
@@ -147,6 +154,7 @@ export default function Home() {
                     timestamp: new Date(timestamp * 1000),
                     message,
                     name,
+                    amount,
                 },
             ]);
         };
@@ -170,35 +178,42 @@ export default function Home() {
     }, [getMemos]);
 
     return (
-        <div className={styles.container}>
+        <div className="min-h-screen px-4 flex flex-col justify-center items-center">
             <Head>
                 <title>Buy Ned a Coffee!</title>
                 <meta name="description" content="Tipping site" />
                 <link rel="icon" href="/favicon.ico" />
             </Head>
 
-            <main className={styles.main}>
-                <h1 className={styles.title}>Buy Ned a Coffee!</h1>
+            <main className="flex-1 py-20 flex flex-col justify-center items-center">
+                <h1 className="text-4xl sm:text-6xl">
+                    Buy{" "}
+                    <a
+                        href="https://github.com/edwardhorsey"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-600 hover:underline"
+                    >
+                        Ned
+                    </a>{" "}
+                    a Coffee!
+                </h1>
 
-                {error && <p>{error}</p>}
+                {currentAccount && (
+                    <span title={currentAccount} className="mt-5 py-5 text-lg">
+                        Connected with {`${currentAccount.slice(0, 6)}...${currentAccount.slice(-4)}`}
+                    </span>
+                )}
 
                 {currentAccount ? (
-                    <div>
-                        <span title={currentAccount}>
-                            Connected with {`${currentAccount.slice(0, 6)}...${currentAccount.slice(-4)}`}
-                        </span>
-                        <form>
-                            <div>
-                                <label>Name</label>
-                                <br />
-
+                    <div className="my-5 p-5 border-2 border-gray-200 rounded-xl w-full max-w-sm">
+                        <form className="flex flex-col">
+                            <label className="flex flex-col mb-5">
+                                <span className="font-bold">Name</span>
                                 <input id="name" type="text" placeholder="anon" onChange={onNameChange} />
-                            </div>
-                            <br />
-                            <div>
-                                <label>Send Ned a message</label>
-                                <br />
-
+                            </label>
+                            <label className="flex flex-col mb-5">
+                                <span className="font-bold">Send Ned a message</span>
                                 <textarea
                                     rows={3}
                                     placeholder="Enjoy your coffee!"
@@ -206,45 +221,74 @@ export default function Home() {
                                     onChange={onMessageChange}
                                     required
                                 ></textarea>
-                            </div>
-                            <div>
-                                <button type="button" onClick={() => buyCoffee()}>
-                                    Send 1 Coffee for 0.001ETH
-                                </button>
-                            </div>
-                            <div>
-                                <button type="button" onClick={() => buyCoffee(true)}>
-                                    Send 1 Large Coffee for 0.003ETH
-                                </button>
-                            </div>
+                            </label>
+                            <button
+                                type="button"
+                                onClick={() => buyCoffee("0.001")}
+                                className="bg-blue-500 text-white px-8 py-3 rounded-xl my-2"
+                            >
+                                Send 1 Coffee for 0.001ETH
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => buyCoffee("0.005")}
+                                className="bg-blue-500 text-white px-8 py-3 rounded-xl my-2"
+                            >
+                                Send 1 Large Coffee for 0.003ETH
+                            </button>
                         </form>
                     </div>
                 ) : (
-                    <button onClick={connectWallet}> Connect your wallet </button>
+                    <div className="mt-5">
+                        <button onClick={connectWallet} className="bg-blue-500 text-white px-8 py-3 rounded-xl my-2">
+                            {" "}
+                            Connect your wallet{" "}
+                        </button>
+                    </div>
+                )}
+
+                {currentAccount && (
+                    <>
+                        <span className="mt-5 py-5 text-lg">Memos received</span>
+                        {memos.map((memo, idx) => {
+                            return (
+                                <div
+                                    key={idx}
+                                    className="border-2 border-gray-200 rounded-xl m-1 py-2 px-3 w-full max-w-sm flex flex-col items-start"
+                                >
+                                    <p className="font-bold">&quot;{memo.message}&quot;</p>
+                                    <p>
+                                        From: {memo.name} at {memo.timestamp.toDateString()}
+                                    </p>
+                                </div>
+                            );
+                        })}
+                    </>
                 )}
             </main>
 
-            {currentAccount && <h1>Memos received</h1>}
-
-            {currentAccount &&
-                memos.map((memo, idx) => {
-                    return (
-                        <div
-                            key={idx}
-                            style={{ border: "2px solid", borderRadius: "5px", padding: "5px", margin: "5px" }}
-                        >
-                            <p style={{ fontWeight: "bold" }}>&quot;{memo.message}&quot;</p>
-                            <p>
-                                From: {memo.name} at {memo.timestamp.toString()}
-                            </p>
-                        </div>
-                    );
-                })}
-
-            <footer className={styles.footer}>
-                <a href="https://alchemy.com/?a=roadtoweb3weektwo" target="_blank" rel="noopener noreferrer">
-                    Created by @thatguyintech for Alchemy&apos;s Road to Web3 lesson two!
-                </a>
+            <footer className="flex justify-center items-center h-12 border-t-slate-100">
+                <span>
+                    Created by{" "}
+                    <a
+                        href="https://twitter.com/EdwardHorsey"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-600 hover:underline"
+                    >
+                        @EdwardHorsey
+                    </a>{" "}
+                    for Alchemy&apos;s{" "}
+                    <a
+                        href="https://alchemy.com/?a=roadtoweb3weektwo"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-600 hover:underline"
+                    >
+                        Road to Web3
+                    </a>{" "}
+                    lesson two!
+                </span>
             </footer>
         </div>
     );
