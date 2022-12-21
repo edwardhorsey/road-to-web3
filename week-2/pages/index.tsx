@@ -3,6 +3,8 @@ import { ethers } from "ethers";
 import Head from "next/head";
 import { ChangeEvent, useCallback, useEffect, useState } from "react";
 import { Memo, MemoRaw } from "../types/memo";
+import { toast } from "react-toastify";
+import { generateReadbleAccount } from "../lib/misc";
 
 // Contract Address & ABI
 const contractAddress = "0x813C080BAC2DA8d35560576FE50D094868860eA4";
@@ -13,8 +15,8 @@ export default function Home() {
     const [currentAccount, setCurrentAccount] = useState("");
     const [name, setName] = useState("");
     const [message, setMessage] = useState("");
+    const [formDisabled, setFormDisabled] = useState(false);
     const [memos, setMemos] = useState<Memo[]>([]);
-    const [error, setError] = useState("");
 
     const onNameChange = (event: ChangeEvent<HTMLInputElement>) => {
         setName(event.target.value);
@@ -38,14 +40,10 @@ export default function Home() {
                     console.log("wallet is connected! " + account);
                 } else {
                     console.log("make sure MetaMask is connected");
-
-                    setError("Make sure MetaMask is connected");
                 }
             }
         } catch (error) {
             console.log("error: ", error);
-
-            setError(error instanceof Error ? error.message : "Something went wrong");
         }
     };
 
@@ -56,7 +54,7 @@ export default function Home() {
             if (!ethereum) {
                 console.log("please install MetaMask");
 
-                setError("Please install MetaMask");
+                toast.info("Please install MetaMask");
             }
 
             if (ethereum.request) {
@@ -65,13 +63,18 @@ export default function Home() {
                 });
 
                 setCurrentAccount(accounts[0]);
+                toast.success(`Connected as ${generateReadbleAccount(accounts[0])}!`);
             }
         } catch (error) {
             console.log(error);
+
+            toast.error("Make sure MetaMask is connected");
         }
     };
 
     const buyCoffee = async (tip: string) => {
+        let toastId;
+
         try {
             const { ethereum } = window;
 
@@ -81,6 +84,9 @@ export default function Home() {
                 const buyMeACoffee = new ethers.Contract(contractAddress, contractABI, signer);
 
                 console.log("buying coffee..");
+                toastId = toast.loading("Buying coffee..");
+                setFormDisabled(true);
+
                 const coffeeTxn = await buyMeACoffee.buyCoffee(
                     name ? name : "anon",
                     message ? message : "Enjoy your coffee!",
@@ -92,15 +98,31 @@ export default function Home() {
                 console.log("mined ", coffeeTxn.hash);
 
                 console.log("coffee purchased!");
+                toast.update(toastId, {
+                    type: "success",
+                    render: "Coffee purchased!",
+                    isLoading: false,
+                    autoClose: 2000,
+                });
 
                 // Clear the form fields.
                 setName("");
                 setMessage("");
+                setFormDisabled(false);
             }
         } catch (error) {
             console.log(error);
 
-            setError(error instanceof Error ? error.message : "Something went wrong");
+            if (toastId) {
+                toast.update(toastId, {
+                    type: "error",
+                    render: "Coffee purchase failed!",
+                    isLoading: false,
+                    autoClose: 2000,
+                });
+            }
+
+            setFormDisabled(false);
         }
     };
 
@@ -117,24 +139,25 @@ export default function Home() {
                 console.log("fetching memos from the blockchain..");
                 const memos = (await buyMeACoffee.getMemos()) as MemoRaw[];
                 console.log("fetched!");
+
                 setMemos(
-                    memos.map(({ from, timestamp, message, name, amount }) => ({
-                        address: from,
-                        timestamp: new Date(timestamp * 1000),
-                        message,
-                        name,
-                        amount,
-                    })),
+                    memos
+                        .map(({ from, timestamp, message, name, amount }) => ({
+                            address: from,
+                            timestamp: new Date(timestamp * 1000),
+                            message,
+                            name,
+                            amount,
+                        }))
+                        .reverse(),
                 );
             } else {
                 console.log("Metamask is not connected");
 
-                setError("Metamask is not connected");
+                toast.error("Error fetching Memos");
             }
         } catch (error) {
             console.log(error);
-
-            setError(error instanceof Error ? error.message : "Something went wrong");
         }
     }, []);
 
@@ -148,7 +171,6 @@ export default function Home() {
         const onNewMemo = (from: string, timestamp: number, name: string, message: string, amount: string) => {
             console.log("Memo received: ", from, timestamp, name, message, amount);
             setMemos((prevState) => [
-                ...prevState,
                 {
                     address: from,
                     timestamp: new Date(timestamp * 1000),
@@ -156,6 +178,7 @@ export default function Home() {
                     name,
                     amount,
                 },
+                ...prevState,
             ]);
         };
 
@@ -181,7 +204,10 @@ export default function Home() {
         <div className="min-h-screen px-4 flex flex-col justify-center items-center">
             <Head>
                 <title>Buy Ned a Coffee!</title>
-                <meta name="description" content="Tipping site" />
+                <meta
+                    name="description"
+                    content="Buy Me A Coffee App projects for Alchemy's Road to Web3 course week 2"
+                />
                 <link rel="icon" href="/favicon.ico" />
             </Head>
 
@@ -201,7 +227,7 @@ export default function Home() {
 
                 {currentAccount && (
                     <span title={currentAccount} className="mt-5 py-5 text-lg">
-                        Connected with {`${currentAccount.slice(0, 6)}...${currentAccount.slice(-4)}`}
+                        Connected with {generateReadbleAccount(currentAccount)}
                     </span>
                 )}
 
@@ -210,7 +236,13 @@ export default function Home() {
                         <form className="flex flex-col">
                             <label className="flex flex-col mb-5">
                                 <span className="font-bold">Name</span>
-                                <input id="name" type="text" placeholder="anon" onChange={onNameChange} />
+                                <input
+                                    id="name"
+                                    type="text"
+                                    placeholder="anon"
+                                    onChange={onNameChange}
+                                    disabled={formDisabled}
+                                />
                             </label>
                             <label className="flex flex-col mb-5">
                                 <span className="font-bold">Send Ned a message</span>
@@ -220,19 +252,22 @@ export default function Home() {
                                     id="message"
                                     onChange={onMessageChange}
                                     required
+                                    disabled={formDisabled}
                                 ></textarea>
                             </label>
                             <button
                                 type="button"
                                 onClick={() => buyCoffee("0.001")}
-                                className="bg-blue-500 text-white px-8 py-3 rounded-xl my-2"
+                                className="bg-blue-500 text-white px-8 py-3 rounded-xl my-2 disabled:grayscale"
+                                disabled={formDisabled}
                             >
                                 Send 1 Coffee for 0.001ETH
                             </button>
                             <button
                                 type="button"
                                 onClick={() => buyCoffee("0.005")}
-                                className="bg-blue-500 text-white px-8 py-3 rounded-xl my-2"
+                                className="bg-blue-500 text-white px-8 py-3 rounded-xl my-2 disabled:grayscale"
+                                disabled={formDisabled}
                             >
                                 Send 1 Large Coffee for 0.003ETH
                             </button>
