@@ -5,12 +5,11 @@ import { ChangeEvent, useCallback, useEffect, useState } from "react";
 import styles from "../styles/Home.module.css";
 import { Memo } from "../types/memo";
 
+// Contract Address & ABI
+const contractAddress = "0x813C080BAC2DA8d35560576FE50D094868860eA4";
 const contractABI = abi.abi;
 
 export default function Home() {
-    // Contract Address & ABI
-    const contractAddress = "0xAC66d937D890400c656C1a5cE169f1D3E06a2B56";
-
     // Component state
     const [currentAccount, setCurrentAccount] = useState("");
     const [name, setName] = useState("");

@@ -1,6 +1,5 @@
 import { HardhatUserConfig } from "hardhat/config";
 import "@nomicfoundation/hardhat-toolbox";
-import { ethers } from "hardhat";
 import * as dotenv from "dotenv";
 
 dotenv.config();
