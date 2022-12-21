@@ -72,13 +72,13 @@ async function main() {
     console.log("== try to change withdrawal address not as owner - should fail ==");
 
     try {
-        await buyMeACoffee.connect(tipper2).changeWithdrawalAddress(tipper.address);
+        await buyMeACoffee.connect(tipper2).changeWithdrawAddress(tipper.address);
     } catch (error) {
         console.log(error instanceof Error ? error.message : error);
     }
 
     console.log("== change withdrawal address as owner ==");
-    await buyMeACoffee.connect(owner).changeWithdrawalAddress(tipper.address);
+    await buyMeACoffee.connect(owner).changeWithdrawAddress(tipper.address);
 
     console.log("== buy some more coffees and withdraw tips to new owner ==");
     const largerTip = { value: ethers.utils.parseEther("3.0") };

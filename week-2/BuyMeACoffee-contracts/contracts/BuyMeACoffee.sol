@@ -23,14 +23,14 @@ contract BuyMeACoffee {
     // List of all memos received from friends.
     Memo[] memos;
 
-    // Address of contract deployer & tip WithdrawalAddress.
+    // Address of contract deployer & tip WithdrawAddress.
     address payable owner;
-    address payable withdrawalAddress;
+    address payable withdrawAddress;
 
     // Deploy logic.
     constructor() {
         owner = payable(msg.sender);
-        withdrawalAddress = payable(msg.sender);
+        withdrawAddress = owner;
     }
 
     /**
@@ -64,7 +64,7 @@ contract BuyMeACoffee {
      * @dev Send the entire balance stored in this contract to the owner
      */
     function withdrawTips() public {
-        require(withdrawalAddress.send(address(this).balance));
+        require(withdrawAddress.send(address(this).balance));
     }
 
     /**
@@ -75,11 +75,12 @@ contract BuyMeACoffee {
     }
 
     /**
-     * @dev Change WithdrawalAddress of tips
+     * @dev Change withdraw address of tips
+     * @param _newAddress new withdrawal address
      */
-    function changeWithdrawalAddress(address newWithdrawalAddress) public {
+    function changeWithdrawAddress(address _newAddress) public {
         require(msg.sender == owner, "You are not the owner of this contract");
 
-        withdrawalAddress = payable(newWithdrawalAddress);
+        withdrawAddress = payable(_newAddress);
     }
 }
