@@ -13,6 +13,7 @@ function readBase64EncodedJSONObject(data: string) {
 
 function printTokenMetadata(data: string) {
     const tokenMetadata = readBase64EncodedJSONObject(data);
+    console.log("SVG here: ", tokenMetadata.image);
     tokenMetadata.image = readBase64EncodedString(tokenMetadata.image);
 
     console.log(tokenMetadata);
@@ -25,16 +26,16 @@ async function main() {
         await nftContract.deployed();
         console.log("Contract deployed to:", nftContract.address);
 
-        console.log("-- Mint contract --");
+        console.log("\n-- Mint contract --");
         const [owner] = await ethers.getSigners();
         await nftContract.connect(owner).mint();
-
         printTokenMetadata(await nftContract.getTokenURI(1));
 
-        console.log("-- Train contract --");
-        await nftContract.train(1);
-
-        printTokenMetadata(await nftContract.getTokenURI(1));
+        for (let i = 0; i < 3; i += 1) {
+            console.log(`\n-- Train contract ${i} --`);
+            await nftContract.train(1);
+            printTokenMetadata(await nftContract.getTokenURI(1));
+        }
 
         process.exit(0);
     } catch (error) {
